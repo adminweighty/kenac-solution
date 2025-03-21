@@ -24,8 +24,8 @@ Auth::routes(['verify' => true]);
 // Private Routes
 Route::group(['middleware' => ['auth']], function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-    Route::get('/without/breadcrumbs', [App\Http\Controllers\HomeController::class, 'about'])->name('about');
-});
+    Route::get('/transactions', [App\Http\Controllers\HomeController::class, 'transactions'])->name('transactions');
+ });
 
 Route::fallback(function () {
     abort(404);

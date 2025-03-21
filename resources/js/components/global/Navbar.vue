@@ -9,9 +9,7 @@
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="/home" class="nav-link">Home</a>
             </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="/without/breadcrumbs" class="nav-link">Without breadcrumbs</a>
-            </li>
+
         </ul>
 
         <!-- SEARCH FORM -->

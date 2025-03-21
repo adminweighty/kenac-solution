@@ -1,4 +1,5 @@
 // Views
+import { createApp } from 'vue';  // Correct way to import Vue 3
 import Navbar from "./components/global/Navbar";
 import Footer from "./components/global/Footer";
 import Sidebar from "./components/global/Sidebar";
@@ -7,13 +8,10 @@ import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import PasswordReset from "./components/auth/PasswordReset";
 import PasswordUpdate from "./components/auth/PasswordUpdate";
-
-require("./bootstrap");
-
-window.Vue = require("vue").default;
-
-const app = new Vue({
-    el: "#app",
+import LandingPage from "./components/LandingPage";
+import Transactions from "./components/Transactions";
+// Initialize the app
+createApp({
     components: {
         Container,
         Navbar,
@@ -23,5 +21,7 @@ const app = new Vue({
         Register,
         PasswordReset,
         PasswordUpdate,
+        LandingPage,
+        Transactions
     }
-});
+}).mount('#app');  // Mount the app to the element with id 'app'

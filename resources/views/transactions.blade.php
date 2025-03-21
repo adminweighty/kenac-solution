@@ -3,7 +3,7 @@
 @section('content')
 
 @php
-    $title = "Dashboard";
+    $title = "Transactions";
 
 @endphp
 
@@ -11,7 +11,7 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
+                <div class="card-header">{{ __('Transactions') }}</div>
 
                 <div class="card-body">
                     @if (session('status'))
@@ -20,7 +20,7 @@
                         </div>
                     @endif
 
-                    <landing-page></landing-page>
+                    <transactions></transactions>
                 </div>
             </div>
         </div>

@@ -34,7 +34,7 @@
 
     @yield('styles')
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'TRS Portal') }}</title>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper" id="app">
@@ -47,6 +47,6 @@
             </template>
         </Container>
     </div>
-    
+
 </body>
 </html>
