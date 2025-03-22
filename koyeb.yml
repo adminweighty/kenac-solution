@@ -1,0 +1,27 @@
+name: kenac_solution
+region: fra  # Change to your preferred Koyeb region
+
+dockerfile: ./Dockerfile
+
+services:
+  - name: web
+    type: web
+    build:
+      dockerfile: ./Dockerfile
+    ports:
+      - 8000
+    env:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        value: base64:ZJtV1rnTa7LXXRevW3sJ4KkwSJU1tjP1Dz0cyHYGEWc=
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: wolverine.hkdns.host
+      - key: DB_DATABASE
+        value: uotzqsxm_kanac_solution
+      - key: DB_USERNAME
+        value: uotzqsxm_kanac_solution
+      - key: DB_PASSWORD
+        value: ycLZdXLpmECqAGqBzxHr

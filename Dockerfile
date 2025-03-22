@@ -1,54 +1,64 @@
 # Stage 1: Build Vue.js (Frontend)
-FROM node:16 AS frontend
+FROM node:18 AS frontend
+ # Upgraded to Node 18 for better compatibility
 
-# Set the working directory to the frontend directory in Laravel
+# Set working directory to Laravel project root
 WORKDIR /var/www/html
 
-# Install dependencies for the Vue.js app (via Laravel Mix)
-COPY ./resources/js/package.json ./resources/js/package-lock.json /var/www/html/resources/js/
-RUN cd /var/www/html/resources/js && npm install
+# Copy package files first to leverage Docker caching
+COPY package.json package-lock.json webpack.mix.js ./
 
-# Run Laravel Mix to build the Vue.js assets
-RUN cd /var/www/html/resources/js && npm run prod
+# Install Node dependencies
+RUN npm install
+
+# Copy actual frontend source code
+COPY resources/js/ resources/js/
+COPY resources/sass/ resources/sass/
+
+# Build frontend assets
+RUN npm run production
 
 # Stage 2: Backend (Laravel)
-FROM php:8.1-fpm AS backend
+FROM php:8.2-fpm AS backend
+ # Upgraded to PHP 8.2 to match Symfony 7.2
 
-# Install necessary PHP extensions for Laravel
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git
+# Install necessary PHP extensions
+RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git unzip
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install gd pdo pdo_mysql
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set the working directory to Laravel's root and copy the Laravel files
+# Set working directory
 WORKDIR /var/www/html
+
+# Copy Laravel application files
 COPY . .
+
+# Fix Git "dubious ownership" issue
+RUN git config --global --add safe.directory /var/www/html
 
 # Install Laravel dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Stage 3: Final Image - Serve both Laravel backend and the built Vue.js frontend
-FROM php:8.1-fpm
+# Stage 3: Final Image - Serve Laravel backend and built Vue.js frontend
+FROM php:8.2-fpm
 
-# Install necessary PHP extensions for Laravel
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git
+# Install necessary PHP extensions
+RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git unzip
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install gd pdo pdo_mysql
 
-# Set the working directory to Laravel's root
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy the Laravel app (backend) and the built frontend files from previous stages
+# Copy backend & built frontend assets from previous stages
 COPY --from=backend /var/www/html /var/www/html
-COPY --from=frontend /var/www/html/resources/js/dist /var/www/html/public/js
+COPY --from=frontend /var/www/html/public /var/www/html/public
 
-# Install Composer globally (in case the final image needs it)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Set up the entry point for Laravel
+# Set up Laravel entry point
 CMD ["php-fpm"]
 
-# Expose the port Heroku uses
-EXPOSE 8080
+# Expose Laravel port
+EXPOSE 8000
