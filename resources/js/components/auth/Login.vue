@@ -35,7 +35,6 @@
                         </div>
                     </form>
 
-                    <a href="/register" class="text-center">Don't have an account?</a> <br/>
                     <a href="/password/reset" class="text-center">Forgot your password?</a>
                 </div>
                 <!-- /.form-box -->
@@ -76,7 +75,7 @@ export default {
             this.loading = true
             this.failure = false
             this.success = false
-            
+
             // Register the user
             let user = {
                 email: this.email,

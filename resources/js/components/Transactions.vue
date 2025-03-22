@@ -3,21 +3,23 @@
 
         <!-- Dropdown for Add Transaction -->
         <div class="dropdown mb-4">
-            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <button class="btn btn-primary" type="button" @click="openAddTransactionModal">
                 Add Transaction
             </button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                <a class="dropdown-item" href="#" @click="openAddTransactionModal">Add New Transaction</a>
-            </div>
-        </div>
-        <!-- Filters Section -->
-        <div class="filters d-flex align-items-center">
-            <input type="text" v-model="filters.reference" placeholder="Filter by Reference" class="form-control mb-2 mr-2" />
-            <input type="number" v-model="filters.amount" placeholder="Filter by Amount" class="form-control mb-2 mr-2" />
-            <input type="date" v-model="filters.transactionDate" placeholder="Filter by Transaction Date" class="form-control mb-2 mr-2" />
-            <input type="date" v-model="filters.valueDate" placeholder="Filter by Value Date" class="form-control mb-2 mr-2" />
 
         </div>
+        <!-- Filters Section -->
+        <div class="filters d-flex align-items-center small-font">
+            <input type="text" v-model="filters.reference" placeholder="Filter by Reference"
+                   class="form-control mb-2 mr-2"/>
+            <input type="number" v-model="filters.amount" placeholder="Filter by Amount"
+                   class="form-control mb-2 mr-2"/>
+            <input type="date" v-model="filters.transaction_date" placeholder="Filter by Transaction Date"
+                   class="form-control mb-2 mr-2"/>
+            <input type="date" v-model="filters.value_date" placeholder="Filter by Value Date"
+                   class="form-control mb-2 mr-2"/>
+        </div>
+
         <div class="row">
             <div class="col-md-12">
                 <button class="btn btn-secondary btn-sm" @click="resetFilters">Reset Filters</button>
@@ -31,15 +33,19 @@
                 <h3 class="card-title">Transactions</h3>
             </div>
             <div class="card-body">
-                <table class="table table-bordered table-striped">
+                <table class="table table-bordered table-striped small-table">
                     <thead>
                     <tr>
                         <th @click="sortTable('id')">ID <i :class="getSortIcon('id')"></i></th>
                         <th @click="sortTable('reference')">Reference <i :class="getSortIcon('reference')"></i></th>
                         <th @click="sortTable('amount')">Amount <i :class="getSortIcon('amount')"></i></th>
-                        <th @click="sortTable('transactionDate')">Transaction Date <i :class="getSortIcon('transactionDate')"></i></th>
-                        <th @click="sortTable('valueDate')">Value Date <i :class="getSortIcon('valueDate')"></i></th>
+                        <th @click="sortTable('transaction_date')">Transaction Date <i
+                            :class="getSortIcon('transaction_date')"></i></th>
+                        <th @click="sortTable('value_date')">Value Date <i :class="getSortIcon('value_date')"></i></th>
+                        <th>Type</th>
                         <th>Send to Bank</th>
+                        <th>Bank Confirmed</th>
+                        <th>Bank Date</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -48,16 +54,37 @@
                         <td>{{ transaction.id }}</td>
                         <td>{{ transaction.reference }}</td>
                         <td>{{ transaction.amount }}</td>
-                        <td>{{ formatDate(transaction.transactionDate) }}</td>
-                        <td>{{ formatDate(transaction.valueDate) }}</td>
+                        <td>{{ formatDate(transaction.transaction_date) }}</td>
+                        <td>{{ formatDate(transaction.value_date) }}</td>
+                        <td>{{ capitalizeFirstLetter(transaction.payment_type) }}</td>
                         <td>
-                            <input type="checkbox" v-model="transaction.sendToBank" />
+                            <input v-if="transaction.send_to_bank===1" type="checkbox" checked class="green-checkbox"
+                                   disabled/>
+                            <input
+                                v-if="transaction.send_to_bank !== 1"
+                                type="checkbox"
+                                :value="transaction.id"
+                                :checked="tickedTransactions.includes(transaction.id)"
+                                @change="toggleTransactionSelection(transaction)"
+                            />
                         </td>
                         <td>
-                            <button class="btn btn-warning btn-sm" @click="editTransaction(transaction)">
+                            <input v-if="transaction.bank_confirmed===1" type="checkbox" checked class="green-checkbox"
+                                   disabled/>
+                            <input v-if="transaction.bank_confirmed!==1" type="checkbox" disabled/>
+                        </td>
+                        <td v-if="transaction.bank_confirmation_date!=null">
+                            {{ formatDate(transaction.bank_confirmation_date) }}
+                        </td>
+                        <td v-if="transaction.bank_confirmation_date==null"><span class="text-danger">Pending</span>
+                        </td>
+                        <td>
+                            <button v-if="transaction.send_to_bank!==1" class="btn btn-warning btn-sm"
+                                    @click="editTransaction(transaction)">
                                 <i class="fas fa-pencil-alt"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm button-spacing" @click="confirmDelete(transaction)">
+                            <button v-if="transaction.send_to_bank!==1" class="btn btn-danger btn-sm button-spacing"
+                                    @click="confirmDelete(transaction)">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -65,11 +92,14 @@
                     </tbody>
                 </table>
             </div>
+
         </div>
 
         <!-- Pagination Controls -->
         <div class="pagination">
-            <button class="btn btn-primary btn-sm" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">Previous</button>
+            <button class="btn btn-primary btn-sm" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                Previous
+            </button>
 
             <!-- Pagination Numbers -->
             <button
@@ -81,12 +111,23 @@
                 {{ page }}
             </button>
 
-            <button class="btn btn-primary btn-sm" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Next</button>
+            <button class="btn btn-primary btn-sm" :disabled="currentPage === totalPages"
+                    @click="changePage(currentPage + 1)">Next
+            </button>
+        </div>
+        <div class="row">
+            <br/>
+            <div class="col-md-12 mt-5">
+                <button class="btn btn-success" @click="sendTransactionsToBank"
+                        :disabled="tickedTransactions.length === 0">
+                    Send Selected Transactions to Bank
+                </button>
+            </div>
         </div>
 
-
         <!-- Add Transaction Modal -->
-        <div class="modal fade" id="addTransactionModal" tabindex="-1" role="dialog" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
+        <div class="modal fade" id="addTransactionModal" tabindex="-1" role="dialog"
+             aria-labelledby="addTransactionModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -99,30 +140,82 @@
                         <!-- Form Inputs for Adding Transaction -->
                         <div class="form-group">
                             <label for="reference">Reference</label>
-                            <input type="text" class="form-control" id="reference" v-model="newTransaction.reference" />
+                            <input type="text" class="form-control" id="reference" v-model="newTransaction.reference"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.reference != null"
+                            >
+                                {{ error.reference }}
+                            </p>
                         </div>
                         <div class="form-group">
                             <label for="amount">Amount</label>
-                            <input type="number" class="form-control" id="amount" v-model="newTransaction.amount" />
+                            <input type="number" class="form-control" id="amount" v-model="newTransaction.amount"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.amount != null"
+                            >
+                                {{ error.amount }}
+                            </p>
                         </div>
                         <div class="form-group">
-                            <label for="transactionDate">Transaction Date</label>
-                            <input type="date" class="form-control" id="transactionDate" v-model="newTransaction.transactionDate" />
+                            <label for="transaction_date">Transaction Date</label>
+                            <input type="date" class="form-control" id="transaction_date"
+                                   v-model="newTransaction.transaction_date"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.transaction_date != null"
+                            >
+                                {{ error.transaction_date }}
+                            </p>
                         </div>
                         <div class="form-group">
-                            <label for="valueDate">Value Date</label>
-                            <input type="date" class="form-control" id="valueDate" v-model="newTransaction.valueDate" />
+                            <label for="value_date">Value Date</label>
+                            <input type="date" class="form-control" id="value_date"
+                                   v-model="newTransaction.value_date"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.value_date != null"
+                            >
+                                {{ error.value_date }}
+                            </p>
                         </div>
+                        <!-- Payment Type Radio Button Group -->
+                        <div class="form-group">
+                            <label for="payment_type">Payment Type</label><br/>
+                            <input type="radio" id="mobile" value="mobile" v-model="newTransaction.payment_type"/>
+                            Mobile
+                            <input type="radio" id="visa" value="visa" v-model="newTransaction.payment_type"/> Visa
+                            <input type="radio" id="mastercard" value="mastercard"
+                                   v-model="newTransaction.payment_type"/> Mastercard
+                            <input type="radio" id="eft" value="eft" v-model="newTransaction.payment_type"/> EFT
+                        </div>
+                        <p
+                            class="text-center"
+                            style="color: red"
+                            v-if="error.payment_type != null"
+                        >
+                            {{ error.payment_type }}
+                        </p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" @click="addTransaction">Save Transaction</button>
+                        <button type="button" class="btn btn-primary" @click="saveTransaction">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span v-else>Save changes</span>
+
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Edit Transaction Modal -->
-        <div class="modal fade" id="editTransactionModal" tabindex="-1" role="dialog" aria-labelledby="editTransactionModalLabel" aria-hidden="true">
+        <div class="modal fade" id="editTransactionModal" tabindex="-1" role="dialog"
+             aria-labelledby="editTransactionModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -135,28 +228,77 @@
                         <!-- Form Inputs for Editing -->
                         <div class="form-group" :class="{'has-error': !currentTransaction.reference}">
                             <label for="reference">Reference</label>
-                            <input type="text" class="form-control" id="reference" v-model="currentTransaction.reference" />
-                            <small v-if="!currentTransaction.reference" class="text-danger">Reference is required.</small>
+                            <input type="text" class="form-control" id="reference"
+                                   v-model="currentTransaction.reference"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.reference != null"
+                            >
+                                {{ error.reference }}
+                            </p>
                         </div>
                         <div class="form-group" :class="{'has-error': !currentTransaction.amount}">
                             <label for="amount">Amount</label>
-                            <input type="number" class="form-control" id="amount" v-model="currentTransaction.amount" />
-                            <small v-if="!currentTransaction.amount" class="text-danger">Amount is required.</small>
+                            <input type="number" class="form-control" id="amount" v-model="currentTransaction.amount"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.amount != null"
+                            >
+                                {{ error.amount }}
+                            </p></div>
+                        <div class="form-group" :class="{'has-error': !currentTransaction.transaction_date}">
+                            <label for="transaction_date">Transaction Date</label>
+                            <input type="date" class="form-control" id="transaction_date"
+                                   v-model="currentTransaction.transaction_date"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.transaction_date != null"
+                            >
+                                {{ error.transaction_date }}
+                            </p>
                         </div>
-                        <div class="form-group" :class="{'has-error': !currentTransaction.transactionDate}">
-                            <label for="transactionDate">Transaction Date</label>
-                            <input type="date" class="form-control" id="transactionDate" v-model="currentTransaction.transactionDate" />
-                            <small v-if="!currentTransaction.transactionDate" class="text-danger">Transaction date is required.</small>
+                        <div class="form-group" :class="{'has-error': !currentTransaction.value_date}">
+                            <label for="value_date">Value Date</label>
+                            <input type="date" class="form-control" id="value_date"
+                                   v-model="currentTransaction.value_date"/>
+                            <p
+                                class="text-center"
+                                style="color: red"
+                                v-if="error.value_date != null"
+                            >
+                                {{ error.value_date }}
+                            </p>
                         </div>
-                        <div class="form-group" :class="{'has-error': !currentTransaction.valueDate}">
-                            <label for="valueDate">Value Date</label>
-                            <input type="date" class="form-control" id="valueDate" v-model="currentTransaction.valueDate" />
-                            <small v-if="!currentTransaction.valueDate" class="text-danger">Value date is required.</small>
+                        <!-- Payment Type Radio Button Group -->
+                        <div class="form-group">
+                            <label for="payment_type">Payment Type</label><br/>
+                            <input type="radio" id="mobile" value="mobile" v-model="currentTransaction.payment_type"/>
+                            Mobile
+                            <input type="radio" id="visa" value="visa" v-model="currentTransaction.payment_type"/> Visa
+                            <input type="radio" id="mastercard" value="mastercard"
+                                   v-model="currentTransaction.payment_type"/> Mastercard
+                            <input type="radio" id="eft" value="eft" v-model="currentTransaction.payment_type"/> EFT
                         </div>
+                        <p
+                            class="text-center"
+                            style="color: red"
+                            v-if="error.payment_type != null"
+                        >
+                            {{ error.payment_type }}
+                        </p>
                     </div>
                     <div class="modal-footer">
+
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" @click="saveTransaction" :disabled="isFormInvalid">Save changes</button>
+                        <button type="button" class="btn btn-primary" @click="saveTransaction"
+                                :disabled="isFormInvalid">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span v-else>Save changes</span>
+
+                        </button>
                     </div>
                 </div>
             </div>
@@ -176,58 +318,101 @@
     background-color: #17a2b8;
     color: white;
 }
+.spinner-border {
+    border-top-color: transparent; /* Optional: Customize spinner color */
+}
+/* Remove the default checkbox styling */
+/* Remove the default checkbox styling */
+/* Remove the default checkbox styling */
+.green-checkbox {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid #ccc;
+    background-color: #fff;
+    position: relative;
+    cursor: not-allowed; /* Show a non-clickable cursor */
+}
+
+/* Style for the green checkbox when checked and disabled */
+.green-checkbox:checked:disabled {
+    background-color: #4caf50 !important; /* Green background */
+    border-color: #4caf50 !important; /* Green border */
+    accent-color: #4caf50; /* Green checkmark */
+    cursor: not-allowed; /* Make it non-interactive */
+}
+
+/* Custom white checkmark appearance */
+.green-checkbox:checked:disabled::after {
+    content: '';
+    position: absolute;
+    top: 50%; /* Center the tick vertically */
+    left: 6px;
+    width: 6px;
+    height: 12px;
+    border: solid 2px #fff; /* White border for the checkmark */
+    border-width: 0 2px 2px 0; /* Create a checkmark shape */
+    transform: rotate(45deg); /* Rotate to make the tick */
+    transform-origin: center; /* Ensure it rotates around the center */
+    margin-top: -6px; /* Adjust for perfect vertical centering */
+}
+
+.small-table {
+    font-size: 12px; /* Adjust to the size you prefer */
+}
+
+.small-table td,
+.small-table th {
+    padding: 6px 8px; /* Adjust padding to make content fit better */
+}
+
+.small-font {
+    font-size: 10px; /* Adjust this value as needed */
+}
+
+.small-font .form-control {
+    font-size: 10px; /* Adjust input font size */
+    padding: 4px 8px; /* Adjust padding for a more compact look */
+}
+
 </style>
 <script>
 import Swal from 'sweetalert2';
+import axios from 'axios';
+import {format, parseISO} from "date-fns";
+
 
 export default {
     data() {
         return {
-            transactions: [
-                { id: 1, reference: 'TXN001', amount: 150, transactionDate: '2025-03-01', valueDate: '2025-03-02', sendToBank: false },
-                { id: 2, reference: 'TXN002', amount: 200, transactionDate: '2025-03-02', valueDate: '2025-03-03', sendToBank: true },
-                { id: 3, reference: 'TXN003', amount: 300, transactionDate: '2025-03-03', valueDate: '2025-03-04', sendToBank: false },
-                { id: 4, reference: 'TXN004', amount: 250, transactionDate: '2025-03-04', valueDate: '2025-03-05', sendToBank: true },
-                { id: 5, reference: 'TXN005', amount: 500, transactionDate: '2025-03-05', valueDate: '2025-03-06', sendToBank: false },
-                { id: 6, reference: 'TXN006', amount: 450, transactionDate: '2025-03-06', valueDate: '2025-03-07', sendToBank: true },
-                { id: 7, reference: 'TXN007', amount: 650, transactionDate: '2025-03-07', valueDate: '2025-03-08', sendToBank: false },
-                { id: 8, reference: 'TXN008', amount: 700, transactionDate: '2025-03-08', valueDate: '2025-03-09', sendToBank: true },
-                { id: 9, reference: 'TXN009', amount: 900, transactionDate: '2025-03-09', valueDate: '2025-03-10', sendToBank: false },
-                { id: 10, reference: 'TXN010', amount: 1200, transactionDate: '2025-03-10', valueDate: '2025-03-11', sendToBank: true },
-                { id: 11, reference: 'TXN011', amount: 1300, transactionDate: '2025-03-11', valueDate: '2025-03-12', sendToBank: false },
-                { id: 12, reference: 'TXN012', amount: 1100, transactionDate: '2025-03-12', valueDate: '2025-03-13', sendToBank: true },
-                { id: 13, reference: 'TXN013', amount: 950, transactionDate: '2025-03-13', valueDate: '2025-03-14', sendToBank: false },
-                { id: 14, reference: 'TXN014', amount: 850, transactionDate: '2025-03-14', valueDate: '2025-03-15', sendToBank: true },
-                { id: 15, reference: 'TXN015', amount: 1100, transactionDate: '2025-03-15', valueDate: '2025-03-16', sendToBank: false },
-                { id: 16, reference: 'TXN016', amount: 950, transactionDate: '2025-03-16', valueDate: '2025-03-17', sendToBank: true },
-                { id: 17, reference: 'TXN017', amount: 1250, transactionDate: '2025-03-17', valueDate: '2025-03-18', sendToBank: false },
-                { id: 18, reference: 'TXN018', amount: 1350, transactionDate: '2025-03-18', valueDate: '2025-03-19', sendToBank: true },
-                { id: 19, reference: 'TXN019', amount: 1400, transactionDate: '2025-03-19', valueDate: '2025-03-20', sendToBank: false },
-                { id: 20, reference: 'TXN020', amount: 1550, transactionDate: '2025-03-20', valueDate: '2025-03-21', sendToBank: true },
-                { id: 21, reference: 'TXN021', amount: 1600, transactionDate: '2025-03-21', valueDate: '2025-03-22', sendToBank: false },
-                { id: 22, reference: 'TXN022', amount: 1700, transactionDate: '2025-03-22', valueDate: '2025-03-23', sendToBank: true },
-                { id: 23, reference: 'TXN023', amount: 1800, transactionDate: '2025-03-23', valueDate: '2025-03-24', sendToBank: false },
-                { id: 24, reference: 'TXN024', amount: 1900, transactionDate: '2025-03-24', valueDate: '2025-03-25', sendToBank: true },
-                { id: 25, reference: 'TXN025', amount: 2000, transactionDate: '2025-03-25', valueDate: '2025-03-26', sendToBank: false },
-                { id: 26, reference: 'TXN026', amount: 2100, transactionDate: '2025-03-26', valueDate: '2025-03-27', sendToBank: true },
-                { id: 27, reference: 'TXN027', amount: 2200, transactionDate: '2025-03-27', valueDate: '2025-03-28', sendToBank: false },
-                { id: 28, reference: 'TXN028', amount: 2300, transactionDate: '2025-03-28', valueDate: '2025-03-29', sendToBank: true },
-                { id: 29, reference: 'TXN029', amount: 2400, transactionDate: '2025-03-29', valueDate: '2025-03-30', sendToBank: false },
-                { id: 30, reference: 'TXN030', amount: 2500, transactionDate: '2025-03-30', valueDate: '2025-03-31', sendToBank: true },
-            ],
+            isLoading: false, // To control the loader
+            transactions: [],
+            tickedTransactions: [],// To store the selected transaction IDs
             currentPage: 1,
             itemsPerPage: 10,
             filters: {
                 reference: '',
                 amount: '',
-                transactionDate: '',
-                valueDate: ''
+                transaction_date: '',
+                value_date: '',
+                payment_type: ''
+            },
+            error: {
+                reference: '',
+                amount: '',
+                transaction_date: '',
+                value_date: '',
+                payment_type: ''
             },
             newTransaction: {
                 reference: '',
                 amount: '',
-                transactionDate: '',
-                valueDate: ''
+                transaction_date: '',
+                value_date: '',
+                payment_type: ''
             },
             currentTransaction: {},
             sortColumn: '',
@@ -242,8 +427,8 @@ export default {
                     (!this.filters.reference ||
                         transaction.reference.toLowerCase().includes(this.filters.reference.toLowerCase())) &&
                     (!this.filters.amount || transaction.amount === parseFloat(this.filters.amount)) &&
-                    (!this.filters.transactionDate || transaction.transactionDate.includes(this.filters.transactionDate)) &&
-                    (!this.filters.valueDate || transaction.valueDate.includes(this.filters.valueDate))
+                    (!this.filters.transaction_date || transaction.transaction_date.includes(this.filters.transaction_date)) &&
+                    (!this.filters.value_date || transaction.value_date.includes(this.filters.value_date))
                 );
             });
 
@@ -252,7 +437,7 @@ export default {
                 const valueA = a[this.sortColumn];
                 const valueB = b[this.sortColumn];
 
-                if (this.sortColumn === 'transactionDate' || this.sortColumn === 'valueDate') {
+                if (this.sortColumn === 'transaction_date' || this.sortColumn === 'value_date') {
                     return this.compareDates(valueA, valueB);
                 }
 
@@ -284,21 +469,213 @@ export default {
             const totalPages = this.totalPages;
             let startPage = Math.max(1, this.currentPage - 10);
             let endPage = Math.min(totalPages, startPage + 19);
-            return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+            return Array.from({length: endPage - startPage + 1}, (_, index) => startPage + index);
         },
     },
     methods: {
+        validateCreateForm() {
+
+            // Validate each field and set the appropriate error message
+            if (!this.newTransaction.reference) {
+                this.error.reference = 'Reference is required';
+                return false;
+            }
+            if (!this.newTransaction.amount) {
+                this.error.amount = 'Amount is required';
+                return false;
+            } else if (isNaN(this.newTransaction.amount)) {
+                this.error.amount = 'Amount must be a number';
+                return false;
+            }
+
+            if (!this.newTransaction.transaction_date) {
+                this.error.transaction_date = 'Transaction date is required';
+                return false;
+            }
+
+            if (!this.newTransaction.value_date) {
+                this.error.value_date = 'Value date is required';
+                return false;
+            }
+
+            if (!this.newTransaction.payment_type) {
+                this.error.payment_type = 'Payment type is required';
+                return false;
+            }
+
+            return true;
+        },
+        validateUpdateForm() {
+            // Validate each field and set the appropriate error message
+            if (!this.currentTransaction.reference) {
+                this.error.reference = 'Reference is required';
+                return false;
+            }
+            if (!this.currentTransaction.amount) {
+                this.error.amount = 'Amount is required';
+                return false;
+            } else if (isNaN(this.currentTransaction.amount)) {
+                this.error.amount = 'Amount must be a number';
+                return false;
+            }
+            if (!this.currentTransaction.transaction_date) {
+                this.error.transaction_date = 'Transaction date is required';
+                return false;
+            }
+            if (!this.currentTransaction.value_date) {
+                this.error.value_date = 'Value date is required';
+                return false;
+            }
+            if (!this.currentTransaction.payment_type) {
+                this.error.payment_type = 'Payment type is required';
+                return false;
+            }
+            // If no errors, return true (form is valid)
+            return true;
+        },
+        capitalizeFirstLetter(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        },
+        toggleTransactionSelection(transaction) {
+            // Check if the transaction ID is already in the tickedTransactions array
+            const index = this.tickedTransactions.indexOf(transaction.id);
+
+            if (index === -1) {
+                // If the ID is not in the array, add it
+                this.tickedTransactions.push(transaction.id);
+            } else {
+                // If the ID is already in the array, remove it
+                this.tickedTransactions.splice(index, 1);
+            }
+
+            // Log the updated tickedTransactions array to the console
+            console.log(this.tickedTransactions);
+        },
+        async sendToBank() {
+            // Send the selected transactions to the Laravel API
+            try {
+                const token = localStorage.getItem('authToken'); // Or retrieve from Vuex/Pinia
+                let response;
+
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Add token to headers
+                    }
+                };
+                response = await axios.post('/api/send-to-bank', {
+                    transaction_ids: this.tickedTransactions
+                });
+
+                if (response.data.success) {
+                    Swal.fire('Confirmed!', 'Transactions successfully sent to bank.', 'success');
+                    // You might want to clear the tickedTransactions array
+                    this.tickedTransactions = [];
+                    this.fetchTransactions();
+                }
+            } catch (error) {
+                console.error('Error sending to bank:', error);
+                alert('An error occurred while sending transactions.');
+            }
+        },
+        async fetchTransactions() {
+            try {
+                const token = localStorage.getItem('authToken'); // Or retrieve from Vuex/Pinia
+                let response;
+
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Add token to headers
+                    }
+                };
+                response = await axios.get('/api/transactions', config);
+                this.transactions = response.data;
+            } catch (error) {
+                console.error("Error fetching transactions:", error);
+                Swal.fire("Error", "Failed to fetch transactions.", "error");
+            }
+        },
         editTransaction(transaction) {
-            this.currentTransaction = { ...transaction };
+            this.currentTransaction = {...transaction};
             $('#editTransactionModal').modal('show');
         },
+        async saveTransaction() {
 
-        saveTransaction() {
-            const index = this.transactions.findIndex(t => t.id === this.currentTransaction.id);
-            if (index !== -1) {
-                this.transactions[index] = { ...this.currentTransaction };
+
+            try {
+                const token = localStorage.getItem('authToken'); // Or retrieve from Vuex/Pinia
+                let response;
+
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                };
+
+                if (this.currentTransaction.id && this.validateUpdateForm()) {
+                    this.isLoading=true;
+                    // **Update Existing Transaction**
+                    response = await axios.put(`/api/transactions/${this.currentTransaction.id}`, {
+                        reference: this.currentTransaction.reference,
+                        amount: this.currentTransaction.amount,
+                        transaction_date: this.currentTransaction.transaction_date,
+                        value_date: this.currentTransaction.value_date,
+                        payment_type: this.currentTransaction.payment_type
+                    }, config);
+                } else if (!this.currentTransaction.id && this.validateCreateForm()) {
+                    this.isLoading=true;
+                    // **Create New Transaction**
+                    response = await axios.post('/api/transactions', {
+                        reference: this.newTransaction.reference,
+                        amount: this.newTransaction.amount,
+                        transaction_date: this.newTransaction.transaction_date,
+                        value_date: this.newTransaction.value_date,
+                        payment_type: this.newTransaction.payment_type
+                    }, config);
+                }
+
+                if (response.status !== 200) {
+                    this.isLoading=false;
+                    Swal.fire({
+                        text: 'Failed to save transaction',
+                        icon: "error",
+                        buttonsStyling: false,
+                        confirmButtonText: "Ok",
+                        heightAuto: false,
+                        customClass: {
+                            confirmButton: "btn btn-primary"
+                        }
+                    }).then(async () => {
+                        this.currentTransaction = {};
+                        this.newTransaction = {};
+                        await this.fetchTransactions();
+                    });
+                } else {
+                    this.isLoading=false;
+                    console.log("in there")
+                    Swal.fire({
+                        text: 'Transaction saved successfully.',
+                        icon: "success",
+                        buttonsStyling: false,
+                        confirmButtonText: "Ok",
+                        heightAuto: false,
+                        customClass: {
+                            confirmButton: "btn btn-primary"
+                        }
+                    }).then(async () => {
+                        this.currentTransaction = {};
+                        this.newTransaction = {};
+                        await this.fetchTransactions();
+                    });
+
+                }
+
+
+            } catch (error) {
+                console.error('Error saving transaction:', error);
             }
-            $('#editTransactionModal').modal('hide');
         },
 
         confirmDelete(transaction) {
@@ -309,17 +686,32 @@ export default {
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete it!',
                 cancelButtonText: 'No, cancel!',
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    this.deleteTransaction(transaction);
+                    await this.deleteTransaction(transaction);
                 }
             });
         },
 
-        deleteTransaction(transaction) {
-            const index = this.transactions.findIndex(t => t.id === transaction.id);
-            if (index !== -1) {
-                this.transactions.splice(index, 1);
+        async deleteTransaction(transaction) {
+            try {
+                const token = localStorage.getItem('authToken'); // Or retrieve from Vuex/Pinia
+                let response;
+
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Add token to headers
+                    }
+                };
+                response = await axios.delete(`/api/transactions/${transaction.id}`, config);
+                if (response.status === 200) {
+                    Swal.fire("Deleted!", "Transaction has been deleted.", "success");
+                    this.fetchTransactions()
+                }
+            } catch (error) {
+                console.error("Error deleting transaction:", error);
+                Swal.fire("Error", "Failed to delete transaction.", "error");
             }
         },
 
@@ -329,16 +721,31 @@ export default {
             }
         },
         openAddTransactionModal() {
-            // Open the modal for adding a new transaction
+            this.currentTransaction = {id: null, amount: '', description: '', date: ''}; // Initialize new transaction
             $('#addTransactionModal').modal('show');
         },
         resetFilters() {
             this.filters = {
                 reference: '',
                 amount: '',
-                transactionDate: '',
-                valueDate: ''
+                transaction_date: '',
+                value_date: '',
+                payment_type: ''
             };
+        },
+        sendTransactionsToBank() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you want to send the selected transactions to the bank ?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Send!',
+                cancelButtonText: 'No, cancel!',
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await this.sendToBank();
+                }
+            });
         },
 
         sortTable(column) {
@@ -358,7 +765,7 @@ export default {
             }
             return 'fas fa-sort'; // Default icon when no sorting is applied
         },
-        // Compare two dates (transactionDate or valueDate)
+        // Compare two dates (transaction_date or value_date)
         compareDates(dateA, dateB) {
             const timestampA = new Date(dateA).getTime();
             const timestampB = new Date(dateB).getTime();
@@ -371,17 +778,29 @@ export default {
             return 0;
         },
         formatDate(date) {
-            return new Date(date).toLocaleDateString('en-GB');
+            if (!date) return "Invalid Date"; // Handle empty or null values
+
+            try {
+                const parsedDate = parseISO(date); // Ensure proper date parsing
+                return format(parsedDate, "dd-MMM-yyyy"); // Format correctly
+            } catch (error) {
+                return "Invalid Date"; // Handle errors gracefully
+            }
         }
     },
+    mounted() {
+        this.fetchTransactions();
+    }
 };
 </script>
+
 
 <style scoped>
 /* Style for validation */
 .has-error input, .has-error textarea {
     border-color: red;
 }
+
 .has-error label {
     color: red;
 }
