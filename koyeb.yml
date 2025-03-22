@@ -13,6 +13,8 @@ services:
     env:
       - key: APP_ENV
         value: production
+      - key: APP_URL
+        value: https://closed-linzy-weightypremiersolutions-ebaa4007.koyeb.app
       - key: APP_KEY
         value: base64:ZJtV1rnTa7LXXRevW3sJ4KkwSJU1tjP1Dz0cyHYGEWc=
       - key: DB_CONNECTION

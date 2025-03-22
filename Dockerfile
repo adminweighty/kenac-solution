@@ -1,6 +1,6 @@
 # Stage 1: Build Vue.js (Frontend)
 FROM node:18 AS frontend
- # Upgraded to Node 18 for better compatibility
+# Upgraded to Node 18 for better compatibility
 
 # Set working directory to Laravel project root
 WORKDIR /var/www/html
@@ -20,7 +20,7 @@ RUN npm run production
 
 # Stage 2: Backend (Laravel)
 FROM php:8.2-fpm AS backend
- # Upgraded to PHP 8.2 to match Symfony 7.2
+# Upgraded to PHP 8.2 to match Symfony 7.2
 
 # Install necessary PHP extensions
 RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git unzip
@@ -58,7 +58,10 @@ COPY --from=backend /var/www/html /var/www/html
 COPY --from=frontend /var/www/html/public /var/www/html/public
 
 # Set up Laravel entry point
-CMD ["php-fpm"]
+RUN chown -R www-data:www-data /var/www/html
 
-# Expose Laravel port
-EXPOSE 8000
+# Expose port 8080 for Laravel's built-in server (configured to listen on 0.0.0.0)
+EXPOSE 8080
+
+# Start Laravel development server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
