@@ -598,7 +598,7 @@ export default {
         },
         editTransaction(transaction) {
             this.currentTransaction = {...transaction};
-            $('#editTransactionModal').modal('show');
+            jQuery('#editTransactionModal').modal('show');
         },
         async saveTransaction() {
 
@@ -722,7 +722,7 @@ export default {
         },
         openAddTransactionModal() {
             this.currentTransaction = {id: null, amount: '', description: '', date: ''}; // Initialize new transaction
-            $('#addTransactionModal').modal('show');
+            jQuery('#addTransactionModal').modal('show');
         },
         resetFilters() {
             this.filters = {
