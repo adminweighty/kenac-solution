@@ -2,6 +2,17 @@
 
 // Import Vue 3
 import { createApp } from 'vue';
+
+// Import Bootstrap CSS
+import 'bootstrap/dist/css/bootstrap.css';
+
+// Import jQuery and Bootstrap JS
+import $ from 'jquery';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
+// You can use jQuery globally in Vue if necessary
+window.$ = $;   // Import Bootstrap JS (includes modal functionality)
+
 // Import components
 import Navbar from "./components/global/Navbar";
 import Footer from "./components/global/Footer";

@@ -3,7 +3,8 @@
 
         <!-- Dropdown for Add Transaction -->
         <div class="dropdown mb-4">
-            <button class="btn btn-primary" type="button" @click="openAddTransactionModal">
+            <button class="btn btn-primary" type="button" @click="openAddTransactionModal"   data-bs-toggle="modal"
+                    :data-bs-target="'#addTransactionModal'">
                 Add Transaction
             </button>
 
@@ -80,7 +81,7 @@
                         </td>
                         <td>
                             <button v-if="transaction.send_to_bank!==1" class="btn btn-warning btn-sm"
-                                    @click="editTransaction(transaction)">
+                                    @click="editTransaction(transaction)" data-bs-toggle="modal" data-bs-target="#editTransactionModal" >
                                 <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button v-if="transaction.send_to_bank!==1" class="btn btn-danger btn-sm button-spacing"
@@ -598,7 +599,6 @@ export default {
         },
         editTransaction(transaction) {
             this.currentTransaction = {...transaction};
-            jQuery('#editTransactionModal').modal('show');
         },
         async saveTransaction() {
 
@@ -722,7 +722,6 @@ export default {
         },
         openAddTransactionModal() {
             this.currentTransaction = {id: null, amount: '', description: '', date: ''}; // Initialize new transaction
-            jQuery('#addTransactionModal').modal('show');
         },
         resetFilters() {
             this.filters = {
