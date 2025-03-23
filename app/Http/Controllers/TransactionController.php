@@ -129,6 +129,7 @@ class TransactionController extends Controller
         $request->validate([
             'reference' => 'required|string',
             'amount' => 'required|numeric',
+            'status' => 'required|string',
         ]);
 
         // Extract the reference and amount from the request
@@ -150,7 +151,11 @@ class TransactionController extends Controller
         }
 
         // Update the transaction status or perform any necessary logic
-        $transaction->bank_confirmed =1; // Example status update
+        if($request->input('status')=="Processed"){
+            $transaction->bank_confirmed =1; // Example status update
+        }else{
+            $transaction->bank_confirmed =0;
+        }
         // Set the current date and time
         $transaction->bank_confirmation_date = Carbon::now();
         $transaction->save();
